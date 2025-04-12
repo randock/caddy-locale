@@ -1,4 +1,4 @@
-module github.com/randock/nameshift-locale
+module github.com/randock/caddy-locale
 
 go 1.22.7
 
