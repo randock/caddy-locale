@@ -1,7 +1,6 @@
 package locale
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -124,18 +123,18 @@ func (m Locale) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp
 		zap.String("best_match", cleanTag.String()),
 		zap.Int("confidence", int(confidence)))
 
-	// Store the selected locale in the request context in lowercase
-	ctx := context.WithValue(r.Context(), caddy.ReplacerCtxKey, caddy.NewReplacer())
-	repl := ctx.Value(caddy.ReplacerCtxKey).(*caddy.Replacer)
+	// Store the selected locale, in lowercase, on the replacer the request
+	// already carries. Installing a fresh replacer here would drop every
+	// placeholder Caddy has populated ({query}, {uri}, {host}, ...) for all
+	// handlers ordered after this one, leaving `{locale}` as the only usable
+	// placeholder in — for example — a `redir` target.
+	repl := r.Context().Value(caddy.ReplacerCtxKey).(*caddy.Replacer)
 	locale := strings.ToLower(cleanTag.String())
 	repl.Set("locale", locale)
 
 	// Log the final locale being used
 	m.logger.Debug("selected locale",
 		zap.String("locale", locale))
-
-	// Create a new request with the context
-	r = r.WithContext(ctx)
 
 	return next.ServeHTTP(w, r)
 }
